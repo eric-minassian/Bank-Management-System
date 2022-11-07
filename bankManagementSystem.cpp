@@ -21,7 +21,7 @@ Record *ICS45C::BankManagementSystem::openAccount(Record *accounts,
   new_account->lname = lname;
   new_account->email = email;
   new_account->phone = phone;
-  new_account->balance = 0.0;
+  new_account->balance = 0.00;
   new_account->id = account_id;
   new_account->locked = false;
   new_account->next = nullptr;
@@ -39,13 +39,23 @@ Record *ICS45C::BankManagementSystem::openAccount(Record *accounts,
   return head;
 }
 
-void lockAccount(Record *account) { account->locked = true; }
+void ICS45C::BankManagementSystem::lockAccount(Record *account) {
+  if (account) {
+    account->locked = true;
+  }
+}
 
-void unlockAccount(Record *account) { account->locked = false; }
+void ICS45C::BankManagementSystem::unlockAccount(Record *account) {
+  if (account) {
+    account->locked = false;
+  }
+}
 
-Record *searchAccount(Record *accounts, string field, string keyword) {
-  if (field != "ID" || field != "FIRST" || field != "LAST" ||
-      field != "PHONE" || field != "EMAIL") {
+Record *ICS45C::BankManagementSystem::searchAccount(Record *accounts,
+                                                    string field,
+                                                    string keyword) {
+  if (field != "ID" && field != "FIRST" && field != "LAST" &&
+      field != "PHONE" && field != "EMAIL") {
     return nullptr;
   }
 
@@ -67,7 +77,7 @@ Record *searchAccount(Record *accounts, string field, string keyword) {
         if (accounts->phone == keyword) {
           return accounts;
         }
-      } else if (field == "EMAIl") {
+      } else if (field == "EMAIL") {
         if (accounts->email == keyword) {
           return accounts;
         }
@@ -79,38 +89,197 @@ Record *searchAccount(Record *accounts, string field, string keyword) {
   return nullptr;
 }
 
-string printDetails(Record *account) {
-  string answer = "------\nAccount ";
+string ICS45C::BankManagementSystem::printDetails(Record *account) {
   if (account) {
     if (account->locked) {
       return "------\nAccount #" + to_string(account->id) +
-             "\n------\nSorry, this acount has been locked.\n------\n";
+             "\n------\nSorry, this account has been locked.\n------\n";
     } else {
       std::stringstream balance;
       balance << std::fixed << std::setprecision(2) << account->balance;
       return "------\nAccount #" + to_string(account->id) +
              "\n------\nStatus: OPEN\nAccount holder: " + account->fname + " " +
              account->lname + "\nContact: " + account->phone + " / " +
-             account->email + "\nBalance: " + balance.str();
+             account->email + "\nBalance: " + balance.str() + "\n------\n";
     }
   } else {
     return "------\nAccount UNKNOWN\n------\nSorry, this account does not "
            "exist.\n------\n";
   }
 }
-string printDetails(Record *accounts, unsigned int id) {}
-void updateAccount(Record *account, string firstName, string lastName,
-                   string phone, string email, bool locked) {}
-void updateAccount(Record *accounts, unsigned int id, string firstName,
-                   string lastName, string phone, string email, bool locked) {}
-double deposit(Record *account, double value) {}
-double deposit(Record *accounts, unsigned int id, double value) {}
-double withdrawal(Record *account, double value) {}
-double withdrawal(Record *accounts, unsigned int id, double value) {}
-Record *deleteAccount(Record *accounts, unsigned int id) {}
-unsigned int countUnlockedAccounts(Record *accounts) {}
-unsigned int countLockedAccounts(Record *accounts) {}
-unsigned int countAllAccounts(Record *accounts) {}
-long double getAverageBalance(Record *accounts) {}
-long double getBankFunds(Record *accounts) {}
-void closeBank(Record *accounts) {}
+
+string ICS45C::BankManagementSystem::printDetails(Record *accounts,
+                                                  unsigned int id) {
+  while (accounts) {
+    if (accounts->id == id) {
+      return printDetails(accounts);
+    }
+    accounts = accounts->next;
+  }
+  return "------\nAccount UNKNOWN\n------\nSorry, this account does not "
+         "exist.\n------\n";
+}
+
+void ICS45C::BankManagementSystem::updateAccount(Record *account,
+                                                 string firstName,
+                                                 string lastName, string phone,
+                                                 string email, bool locked) {
+  if (account) {
+    account->fname = firstName;
+    account->lname = lastName;
+    account->phone = phone;
+    account->email = email;
+    account->locked = locked;
+  }
+}
+
+void ICS45C::BankManagementSystem::updateAccount(Record *accounts,
+                                                 unsigned int id,
+                                                 string firstName,
+                                                 string lastName, string phone,
+                                                 string email, bool locked) {
+  while (accounts) {
+    if (accounts->id == id) {
+      updateAccount(accounts, firstName, lastName, phone, email, locked);
+    }
+    accounts = accounts->next;
+  }
+}
+
+double ICS45C::BankManagementSystem::deposit(Record *account, double value) {
+  if (account && !account->locked) {
+    if (value >= 0) {
+      account->balance += value;
+    }
+    return account->balance;
+  } else {
+    return -123.45;
+  }
+}
+
+double ICS45C::BankManagementSystem::deposit(Record *accounts, unsigned int id,
+                                             double value) {
+  while (accounts) {
+    if (accounts->id == id) {
+      return deposit(accounts, value);
+    }
+
+    accounts = accounts->next;
+  }
+  return -123.45;
+}
+
+double ICS45C::BankManagementSystem::withdrawal(Record *account, double value) {
+  if (account && !account->locked) {
+    if (value >= 0) {
+      account->balance -= value;
+    }
+    return account->balance;
+  } else {
+    return -123.45;
+  }
+}
+
+double ICS45C::BankManagementSystem::withdrawal(Record *accounts,
+                                                unsigned int id, double value) {
+  while (accounts) {
+    if (id == accounts->id) {
+      return withdrawal(accounts, value);
+    }
+    accounts = accounts->next;
+  }
+  return -123.45;
+}
+
+Record *ICS45C::BankManagementSystem::deleteAccount(Record *accounts,
+                                                    unsigned int id) {
+  Record *previous = accounts;
+  Record *head = accounts;
+
+  if (accounts && accounts->id == id) {
+    head = accounts->next;
+    delete accounts;
+    return head;
+  }
+
+  while (accounts) {
+    if (accounts->id == id) {
+      previous->next = accounts->next;
+      delete accounts;
+      return head;
+    }
+    previous = accounts;
+    accounts = accounts->next;
+  }
+  return head;
+}
+
+unsigned int ICS45C::BankManagementSystem::countUnlockedAccounts(
+    Record *accounts) {
+  unsigned int count = 0;
+  while (accounts) {
+    if (!accounts->locked) {
+      count++;
+    }
+    accounts = accounts->next;
+  }
+  return count;
+}
+
+unsigned int ICS45C::BankManagementSystem::countLockedAccounts(
+    Record *accounts) {
+  unsigned int count = 0;
+  while (accounts) {
+    if (accounts->locked) {
+      count++;
+    }
+    accounts = accounts->next;
+  }
+  return count;
+}
+
+unsigned int ICS45C::BankManagementSystem::countAllAccounts(Record *accounts) {
+  unsigned int count = 0;
+  while (accounts) {
+    count++;
+    accounts = accounts->next;
+  }
+  return count;
+}
+
+long double ICS45C::BankManagementSystem::getAverageBalance(Record *accounts) {
+  unsigned int count = 0;
+  long double total = 0.00;
+  while (accounts) {
+    if (!accounts->locked) {
+      count++;
+      total += accounts->balance;
+    }
+    accounts = accounts->next;
+  }
+  if (count == 0) {
+    return 0.00;
+  } else {
+    return (long double)total / count;
+  }
+}
+
+long double ICS45C::BankManagementSystem::getBankFunds(Record *accounts) {
+  long double total = 0.00;
+  while (accounts) {
+    if (!accounts->locked) {
+      total += accounts->balance;
+    }
+    accounts = accounts->next;
+  }
+  return total;
+}
+
+void ICS45C::BankManagementSystem::closeBank(Record *accounts) {
+  Record *next_account;
+  while (accounts) {
+    next_account = accounts->next;
+    delete accounts;
+    accounts = next_account;
+  }
+}
